@@ -5,55 +5,40 @@ import re
 from sys import stderr
 
 DEST_DIR = Path('data', 'collated')
-SRC_GHMIXR_PATH = Path('data', 'stashed', 'ghgases-fig-1a-ext.txt')
-SRC_GISTEMPS_PATH = Path('data', 'stashed', 'gistemp-v3-fig-a.txt')
-SRC_CO2MM_PATH = Path('data', 'stashed', 'co2_mm_mlo.txt')
 
-SRC = {
+SRCPATH = {
     'ghmixr': Path('data', 'stashed', 'ghgases-fig-1a-ext.txt'),
     'gistemps': Path('data', 'stashed', 'gistemp-v3-fig-a.txt'),
     'co2mm': Path('data', 'stashed', 'co2_mm_mlo.txt'),
 }
 
+# the raw ghgases data two sets of data, lines 1-57ish, and lines 60+; we
+#  want the top half
+GH_MIXR_LINE_CUTOFF = 58
 
-
-
-CO2MM = {
+CFG_CO2MM = {
     'dest': DEST_DIR / 'co2-mm.csv',
     'headers': ('year', 'month', 'decimal_date', 'average', 'interpolated', 'trend', 'days'),
     'pattern': re.compile(r'^(\d{4}) +(1?\d) +(\d{4}\.\d+) +(-?\d+\.\d+) +(\d+\.\d+) +(\d+\.\d+) +(-1|\d{1,2})$', re.MULTILINE),
 }
 
-# the raw ghgases data two sets of data, lines 1-57ish, and lines 60+; we
-#  want the top half
-GH_MIXR_LINE_CUTOFF = 58
-GH_MIXR_OBV = {
+CFG_GH_MIXR_OBV = {
     'dest': DEST_DIR / 'ghgases-mixr-observed.csv',
     'headers': ('year', 'mixing_ratio'),
     'pattern': re.compile(r'(\b\d{4})  (\d{3}\.\d{1,2}\b)'),
 }
 
-GH_MIXR_ALT = {
+CFG_GH_MIXR_ALT = {
     'dest': DEST_DIR / 'ghgases-mixr-future.csv',
     'headers': ('year', 'mixing_ratio'),
     'pattern': re.compile(r'(\b\d{4})  (\d{3}\.\d{1,2}\b)'),
 }
 
-
-GISTEMPS = {
+CFG_GISTEMPS = {
     'dest': DEST_DIR / 'gistemp-v3-surface-air-temp-anomalies.csv',
     'headers': ('year', 'annual_mean_anomaly', '5_year_mean_anomaly'),
     'pattern': re.compile(r'^ +(\d{4}) +(-?\d+\.\d+) +(-?\d+\.\d+|\*) *$', re.MULTILINE),
 }
-
-# GISTEMPS_FIVEYR = {
-#     'dest': DEST_DIR / 'gistemp-5yr-means.csv',
-#     'headers': ('year', 'five_year_mean'),
-#     'pattern': re.compile(r'^ +(\d{4}) .+?(-?\d+\.\d+) *$', re.MULTILINE),
-# }
-
-
-
 
 
 def collate(cfg, rawtext):
@@ -70,27 +55,22 @@ def collate(cfg, rawtext):
 
 
 def collate_co2mm():
-    txt = SRC['co2mm'].read_text()
-
-    collate(CO2MM, txt)
+    txt = SRCPATH['co2mm'].read_text()
+    collate(CFG_CO2MM, txt)
 
 
 def collate_gistemps():
-    txt = SRC['gistemps'].read_text()
-
-    collate(GISTEMPS, txt)
+    txt = SRCPATH['gistemps'].read_text()
+    collate(CFG_GISTEMPS, txt)
 
 def collate_gh_mixing_ratios():
+    _t = SRCPATH['ghmixr'].read_text()
 
-    _t = SRC['ghmixr'].read_text()
+    xlines = _t.splitlines()[0:GH_MIXR_LINE_CUTOFF]
+    collate(CFG_GH_MIXR_OBV, "\n".join(xlines))
 
-    _lines = _t.splitlines()[0:GH_MIXR_LINE_CUTOFF]
-    txt = "\n".join(_lines)
-    collate(GH_MIXR_OBV, txt)
-
-    _lines = _t.splitlines()[GH_MIXR_LINE_CUTOFF:]
-    txt = "\n".join(_lines)
-    collate(GH_MIXR_ALT, txt)
+    ylines = _t.splitlines()[GH_MIXR_LINE_CUTOFF:]
+    collate(CFG_GH_MIXR_ALT, "\n".join(ylines))
 
 
 
