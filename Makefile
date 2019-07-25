@@ -1,6 +1,8 @@
 
 default: clean_derived collate wrangle publish
 
+rerun: clean_all stash collate weranlge publish
+
 # by default, we don't attempt to fetch new data
 stash:
 	./src/stash_data.sh
